@@ -40,8 +40,8 @@ if command -v python3 >/dev/null 2>&1; then
   PYTHON_VERSION=$(python3 --version | grep -oP '\d+\.\d+')
   REQUIRED_VERSION="3.9"
   
-  # Порівнюємо версії
-  if awk "BEGIN {exit !($PYTHON_VERSION >= $REQUIRED_VERSION)}"; then
+  # Порівнюємо версії (перевіряємо, чи версія >= 3.9)
+  if printf '%s\n%s\n' "$REQUIRED_VERSION" "$PYTHON_VERSION" | sort -V -C; then
     echo "✓ Python вже встановлено: $(python3 --version)"
   else
     echo "Python версії $PYTHON_VERSION < $REQUIRED_VERSION. Оновлення..."
