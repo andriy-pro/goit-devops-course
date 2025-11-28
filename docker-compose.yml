@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  # --- 1. Database ---
+
+  db:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_DB: mydatabase
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Персистентність даних
+    networks:
+      - app_network
+    restart: always
+
+  # --- 2. Django Backend ---
+
+  web:
+    build: .
+    command: gunicorn main:application --bind 0.0.0.0:8000
+    volumes:
+      - ./app:/app # Hot-reload: зміни коду відображаються одразу
+    environment:
+      - DB_NAME=mydatabase
+      - DB_USER=myuser
+      - DB_PASSWORD=mypassword
+      - DB_HOST=db
+      - DEBUG=True
+    depends_on:
+      - db
+    networks:
+      - app_network
+    restart: on-failure
+
+  # --- 3. Nginx Proxy ---
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro # Read Only
+    ports:
+      - "80:80" # Порт хоста : Порт контейнера
+    depends_on:
+      - web
+    networks:
+      - app_network
+
+# --- Networks & Volumes ---
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  postgres_data:

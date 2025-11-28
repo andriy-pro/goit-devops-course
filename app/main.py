@@ -8,7 +8,6 @@ from django.http import HttpResponse
 from django.urls import path
 
 # 1. Конфігурація Django "на льоту"
-
 if not settings.configured:
     settings.configure(
         DEBUG=os.environ.get("DEBUG", "False") == "True",
@@ -27,9 +26,8 @@ if not settings.configured:
         },
     )
 
+
 # 2. View (Логіка відповіді)
-
-
 def health_check(request):
     try:
         with connection.cursor() as cursor:
@@ -37,20 +35,18 @@ def health_check(request):
             row = cursor.fetchone()
             db_version = row[0]
         return HttpResponse(
-            f"<h1>DevOps Lesson 4</h1><p>Django is working!</p><p>DB: {db_version}</p>"
+            f"<h1>Lesson-4</h1><p>Django працює - завдання ВИКОНАНО!</p><p>DB: {db_version}</p>"
         )
     except Exception as e:
         return HttpResponse(f"<h1>Error</h1><p>{str(e)}</p>", status=500)
 
 
 # 3. URL Routing
-
 urlpatterns = [
     path("", health_check),
 ]
 
 # 4. WSGI application (Точка входу для Gunicorn)
-
 application = get_wsgi_application()
 
 if __name__ == "__main__":
