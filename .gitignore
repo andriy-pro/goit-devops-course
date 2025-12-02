@@ -457,12 +457,18 @@ junit-*.xml
 # ==========================================
 # TERRAFORM
 # ==========================================
+
 # Downloaded providers (~300 MB)
 **/.terraform/*
 
-# State files (stored in S3)
+# State files (stored in S3, contain secrets!)
 *.tfstate
 *.tfstate.*
+*.tfstate.backup
+
+# Execution plans (may contain secrets)
+*.tfplan
+tfplan
 
 # Crash logs
 crash.log
@@ -484,6 +490,10 @@ terraform.rc
 
 # LocalStack test providers
 providers_local.tf
+
+# NOTE: .terraform.lock.hcl should be COMMITTED!
+# It locks provider versions for consistency.
+# See: https://developer.hashicorp.com/terraform/language/files/dependency-lock
 
 # ==========================================
 # DOCKER & TESTING SECRETS (CRITICAL!)
