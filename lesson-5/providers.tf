@@ -1,16 +1,27 @@
-# providers-LocalStack.tf (ТІЛЬКИ для локального тестування!)
-provider "aws" {
-  region                      = "eu-north-1"
-  access_key                  = "test"
-  secret_key                  = "test"
-  skip_credentials_validation = true
-  skip_metadata_api_check     = true
-  skip_requesting_account_id  = true
+# Налаштування Terraform та AWS провайдера
 
-  endpoints {
-    s3       = "http://localhost:4566"
-    dynamodb = "http://localhost:4566"
-    ec2      = "http://localhost:4566"
-    ecr      = "http://localhost:4566"
+terraform {
+  # Мінімальна версія Terraform
+  required_version = ">= 1.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  # Регіон AWS (Стокгольм, Швеція - один з найближчих до України, дешевший за інші)
+  region = "eu-north-1"
+
+  # Теги, що додаються до всіх ресурсів автоматично
+  default_tags {
+    tags = {
+      Project     = "lesson-5"
+      Environment = "learning"
+      ManagedBy   = "terraform"
+    }
   }
 }
