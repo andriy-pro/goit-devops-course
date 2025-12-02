@@ -13,7 +13,7 @@ resource "aws_dynamodb_table" "locks" {
 
   attribute {
     name = "LockID"
-    type = "S"  # S = String
+    type = "S" # S = String
   }
 
   tags = {
