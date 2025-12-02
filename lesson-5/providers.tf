@@ -1,0 +1,16 @@
+# providers-LocalStack.tf (ТІЛЬКИ для локального тестування!)
+provider "aws" {
+  region                      = "eu-north-1"
+  access_key                  = "test"
+  secret_key                  = "test"
+  skip_credentials_validation = true
+  skip_metadata_api_check     = true
+  skip_requesting_account_id  = true
+
+  endpoints {
+    s3       = "http://localhost:4566"
+    dynamodb = "http://localhost:4566"
+    ec2      = "http://localhost:4566"
+    ecr      = "http://localhost:4566"
+  }
+}
