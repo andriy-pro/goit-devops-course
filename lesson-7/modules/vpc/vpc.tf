@@ -24,7 +24,6 @@ resource "aws_internet_gateway" "main" {
 }
 
 # 3. Публічні підмережі (x3)
-# Ресурси тут отримують публічні IP та мають прямий доступ до інтернету
 resource "aws_subnet" "public" {
   count = length(var.public_subnets)
 
@@ -32,17 +31,18 @@ resource "aws_subnet" "public" {
   cidr_block        = var.public_subnets[count.index]
   availability_zone = var.availability_zones[count.index]
 
-  # Автоматично призначати публічний IP новим інстансам
   map_public_ip_on_launch = true
 
   tags = {
     Name = "${var.vpc_name}-public-${count.index + 1}"
     Type = "public"
+    # Теги для EKS Load Balancer discovery: публічні ALB
+    "kubernetes.io/role/elb"                    = "1"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   }
 }
 
 # 4. Приватні підмережі (x3)
-# Ресурси тут ізольовані від інтернету (для БД, внутрішніх сервісів)
 resource "aws_subnet" "private" {
   count = length(var.private_subnets)
 
@@ -50,11 +50,13 @@ resource "aws_subnet" "private" {
   cidr_block        = var.private_subnets[count.index]
   availability_zone = var.availability_zones[count.index]
 
-  # Приватні підмережі НЕ отримують публічні IP
   map_public_ip_on_launch = false
 
   tags = {
     Name = "${var.vpc_name}-private-${count.index + 1}"
     Type = "private"
+    # Теги для EKS Load Balancer discovery: внутрішні NLB
+    "kubernetes.io/role/internal-elb"           = "1"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   }
 }

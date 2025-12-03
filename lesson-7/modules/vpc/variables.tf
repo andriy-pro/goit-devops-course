@@ -24,3 +24,9 @@ variable "private_subnets" {
   description = "CIDR блоки для приватних підмереж"
   type        = list(string)
 }
+
+variable "cluster_name" {
+  description = "Назва кластера EKS для тегування підмереж"
+  type        = string
+  default     = ""
+}
