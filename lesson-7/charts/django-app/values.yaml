@@ -1,0 +1,79 @@
+# ============================================
+# Налаштування образу
+# ============================================
+image:
+  repository: "" # Буде замінено на ECR URL
+  tag: "latest"
+  pullPolicy: Always
+
+# ============================================
+# Налаштування реплік
+# ============================================
+replicaCount: 2
+
+# ============================================
+# Налаштування сервісу
+# ============================================
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8000
+
+# ============================================
+# Змінні оточення в ConfigMap
+# ============================================
+config:
+  APP_ENV: "production"
+  DEBUG: "False"
+  SECRET_KEY: "change-me-in-production"
+
+# ============================================
+# Налаштування HPA
+# ============================================
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+# ============================================
+# Обмеження ресурсів
+# ============================================
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# ============================================
+# Перевірки готовності та живучості
+# ============================================
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+# ============================================
+# Ingress (за потреби)
+# ============================================
+ingress:
+  enabled: false
+  className: "alb"
+  annotations: {}
+  hosts:
+    - host: django.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []

@@ -1,19 +1,19 @@
 output "cluster_endpoint" {
-  description = "EKS cluster endpoint"
+  description = "Endpoint EKS кластера (URL для API)"
   value       = aws_eks_cluster.main.endpoint
 }
 
 output "cluster_name" {
-  description = "EKS cluster name"
+  description = "Назва EKS кластера"
   value       = aws_eks_cluster.main.name
 }
 
 output "cluster_certificate_authority" {
-  description = "EKS cluster CA certificate"
+  description = "CA сертифікат EKS кластера (base64)"
   value       = aws_eks_cluster.main.certificate_authority[0].data
 }
 
 output "cluster_security_group_id" {
-  description = "Security group ID for EKS cluster"
+  description = "ID Security Group для EKS кластера"
   value       = aws_security_group.eks_cluster.id
 }
