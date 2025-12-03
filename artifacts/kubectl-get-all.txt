@@ -1,0 +1,16 @@
+NAME                              READY   STATUS    RESTARTS   AGE
+pod/django-app-7676b9c6c6-ncnw6   1/1     Running   0          21m
+pod/django-app-7676b9c6c6-tdvsb   1/1     Running   0          21m
+
+NAME                 TYPE           CLUSTER-IP      EXTERNAL-IP                                                                PORT(S)        AGE
+service/django-app   LoadBalancer   172.20.75.195   add9176eefe6044c08aacc8d8a167f83-1487174670.eu-north-1.elb.amazonaws.com   80:30663/TCP   21m
+service/kubernetes   ClusterIP      172.20.0.1      <none>                                                                     443/TCP        38m
+
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/django-app   2/2     2            2           21m
+
+NAME                                    DESIRED   CURRENT   READY   AGE
+replicaset.apps/django-app-7676b9c6c6   2         2         2       21m
+
+NAME                                             REFERENCE               TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/django-app   Deployment/django-app   <unknown>/70%   2         6         2          21m

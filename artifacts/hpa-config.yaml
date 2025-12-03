@@ -1,0 +1,55 @@
+apiVersion: v1
+items:
+- apiVersion: autoscaling/v2
+  kind: HorizontalPodAutoscaler
+  metadata:
+    annotations:
+      meta.helm.sh/release-name: django-app
+      meta.helm.sh/release-namespace: default
+    creationTimestamp: "2025-12-03T20:20:14Z"
+    labels:
+      app.kubernetes.io/instance: django-app
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/name: django-app
+      app.kubernetes.io/version: 1.0.0
+      helm.sh/chart: django-app-1.0.0
+    name: django-app
+    namespace: default
+    resourceVersion: "3360"
+    uid: edee5390-4de0-471d-9c97-dc06892e005c
+  spec:
+    maxReplicas: 6
+    metrics:
+    - resource:
+        name: cpu
+        target:
+          averageUtilization: 70
+          type: Utilization
+      type: Resource
+    minReplicas: 2
+    scaleTargetRef:
+      apiVersion: apps/v1
+      kind: Deployment
+      name: django-app
+  status:
+    conditions:
+    - lastTransitionTime: "2025-12-03T20:20:29Z"
+      message: the HPA controller was able to get the target's current scale
+      reason: SucceededGetScale
+      status: "True"
+      type: AbleToScale
+    - lastTransitionTime: "2025-12-03T20:20:44Z"
+      message: 'the HPA was unable to compute the replica count: failed to get cpu
+        utilization: unable to get metrics for resource cpu: unable to fetch metrics
+        from resource metrics API: the server could not find the requested resource
+        (get pods.metrics.k8s.io)'
+      reason: FailedGetResourceMetric
+      status: "False"
+      type: ScalingActive
+    currentMetrics: null
+    currentReplicas: 2
+    desiredReplicas: 2
+    lastScaleTime: "2025-12-03T20:20:29Z"
+kind: List
+metadata:
+  resourceVersion: ""
