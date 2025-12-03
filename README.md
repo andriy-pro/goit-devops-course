@@ -339,48 +339,48 @@ k9s                            # Запуск
 
 ### K9s — Pods
 
-![K9s Pods](../assets/screenshots/k9s-pods.png)
+![K9s Pods](assets/screenshots/k9s-pods.png)
 
 _K9s показує 2 pods Django застосунку в статусі Running_
 
 ### K9s — Services
 
-![K9s Services](../assets/screenshots/k9s-service.png)
+![K9s Services](assets/screenshots/k9s-service.png)
 
 _K9s показує LoadBalancer service з External IP_
 
 ### Django App у браузері
 
-![App Browser](../assets/screenshots/app-browser.png)
+![App Browser](assets/screenshots/app-browser.png)
 
 _Django працює в Kubernetes! Видно Pod name та Environment_
 
 ### Health Endpoint
 
-![Health Endpoint](../assets/screenshots/app-browser-health.png)
+![Health Endpoint](assets/screenshots/app-browser-health.png)
 
 _Endpoint `/health` повертає `{"status": "healthy"}`_
 
 ### Ready Endpoint
 
-![Ready Endpoint](../assets/screenshots/app-browser-ready.png)
+![Ready Endpoint](assets/screenshots/app-browser-ready.png)
 
 _Endpoint `/ready` повертає `{"status": "ready"}`_
 
 ### ECR Repository
 
-![ECR Image](../assets/screenshots/ecr-image.png)
+![ECR Image](assets/screenshots/ecr-image.png)
 
 _Docker образ `lesson-7-django:latest` в Amazon ECR_
 
 ### EKS Cluster
 
-![EKS Cluster](../assets/screenshots/eks-cluster.png)
+![EKS Cluster](assets/screenshots/eks-cluster.png)
 
 _EKS кластер `lesson-7-eks` в AWS Console_
 
 ### EKS Observability Dashboard
 
-![EKS Observability](../assets/screenshots/eks-observability-dashboard.png)
+![EKS Observability](assets/screenshots/eks-observability-dashboard.png)
 
 _Observability dashboard показує метрики кластера_
