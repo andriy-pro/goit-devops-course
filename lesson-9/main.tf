@@ -21,7 +21,7 @@ module "s3_backend" {
   source = "./modules/s3-backend"
 
   # Унікальне ім'я bucket!
-  bucket_name = "goit-lesson-9-andriy-pro-20251203"
+  bucket_name = "goit-lesson-9-andriy-pro-20251205"
   table_name  = "terraform-locks-lesson-9"
 }
 

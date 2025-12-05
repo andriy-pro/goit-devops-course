@@ -7,7 +7,7 @@
 
 # terraform {
 #   backend "s3" {
-#     bucket         = "goit-lesson-9-andriy-pro-20251203"
+#     bucket         = "goit-lesson-9-andriy-pro-20251205"
 #     key            = "lesson-9/terraform.tfstate"
 #     region         = "eu-north-1"
 #     dynamodb_table = "terraform-locks-lesson-9"
