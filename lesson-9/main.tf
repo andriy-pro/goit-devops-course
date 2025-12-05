@@ -5,13 +5,6 @@
 # ============================================
 locals {
   cluster_name = "lesson-9-eks"
-
-  # Теги для всіх ресурсів
-  common_tags = {
-    Project     = "lesson-9"
-    Environment = "learning"
-    ManagedBy   = "terraform"
-  }
 }
 
 # ============================================
@@ -20,7 +13,6 @@ locals {
 module "s3_backend" {
   source = "./modules/s3-backend"
 
-  # Унікальне ім'я bucket!
   bucket_name = "goit-lesson-9-andriy-pro-20251205"
   table_name  = "terraform-locks-lesson-9"
 }
@@ -36,9 +28,7 @@ module "vpc" {
   availability_zones = ["eu-north-1a", "eu-north-1b", "eu-north-1c"]
   public_subnets     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
   private_subnets    = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
-
-  # Для EKS subnet discovery
-  cluster_name = local.cluster_name
+  cluster_name       = local.cluster_name
 }
 
 # ============================================
@@ -58,15 +48,30 @@ module "eks" {
   source = "./modules/eks"
 
   cluster_name       = local.cluster_name
-  kubernetes_version = "1.28"
+  kubernetes_version = "1.30" # Оновлено з 1.28 (End of Support)
   vpc_id             = module.vpc.vpc_id
+  subnet_ids         = module.vpc.private_subnet_ids
 
-  # Використовуємо приватні підмережі для workers
-  subnet_ids = module.vpc.private_subnet_ids
-
-  # Мінімальна конфігурація для економії
-  instance_types = ["t3.medium"] # Раніше використовували t3.small
+  instance_types = ["t3.medium"]
   desired_nodes  = 2
-  min_nodes      = 2 # 1 => 2 для балансування
-  max_nodes      = 4 # 3 => 4
+  min_nodes      = 2
+  max_nodes      = 4
+}
+
+# ============================================
+# 5. Jenkins Module
+# ============================================
+module "jenkins" {
+  source = "./modules/jenkins"
+
+  eks_dependency = module.eks
+}
+
+# ============================================
+# 6. Argo CD Module
+# ============================================
+module "argo_cd" {
+  source = "./modules/argo-cd"
+
+  eks_dependency = module.eks
 }

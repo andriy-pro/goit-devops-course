@@ -1,7 +1,7 @@
 # Security Group для EKS Cluster
 resource "aws_security_group" "eks_cluster" {
   name        = "${var.cluster_name}-cluster-sg"
-  description = "Security group for EKS cluster"  # AWS не підтримує кирилицю тут!
+  description = "Security group for EKS cluster" # AWS не підтримує кирилицю тут!
   vpc_id      = var.vpc_id
 
   # Вихідний трафік до всіх (для завантаження образів тощо)
@@ -20,7 +20,7 @@ resource "aws_security_group" "eks_cluster" {
 # Security Group для Worker Nodes
 resource "aws_security_group" "eks_nodes" {
   name        = "${var.cluster_name}-nodes-sg"
-  description = "Security group for EKS worker nodes"  # AWS не підтримує кирилицю тут!
+  description = "Security group for EKS worker nodes" # AWS не підтримує кирилицю тут!
   vpc_id      = var.vpc_id
 
   # Вхідний трафік від cluster до nodes

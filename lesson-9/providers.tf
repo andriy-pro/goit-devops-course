@@ -14,13 +14,16 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 2.11"
     }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
+    }
   }
 }
 
 provider "aws" {
   region = "eu-north-1"
 
-  # Теги додаються до ВСІХ ресурсів автоматично
   default_tags {
     tags = {
       Project     = "lesson-9"
@@ -30,7 +33,6 @@ provider "aws" {
   }
 }
 
-# Kubernetes provider (налаштовується після створення EKS)
 provider "kubernetes" {
   host                   = module.eks.cluster_endpoint
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority)
@@ -42,7 +44,6 @@ provider "kubernetes" {
   }
 }
 
-# Helm provider
 provider "helm" {
   kubernetes {
     host                   = module.eks.cluster_endpoint

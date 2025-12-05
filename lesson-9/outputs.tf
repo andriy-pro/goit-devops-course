@@ -35,8 +35,35 @@ output "eks_cluster_endpoint" {
   value       = module.eks.cluster_endpoint
 }
 
-# Команда для налаштування kubectl
 output "configure_kubectl" {
   description = "Команда для налаштування kubectl"
   value       = "aws eks update-kubeconfig --region eu-north-1 --name ${module.eks.cluster_name}"
+}
+
+# ============================================
+# Jenkins
+# ============================================
+output "jenkins_namespace" {
+  description = "Namespace де встановлено Jenkins"
+  value       = module.jenkins.jenkins_namespace
+}
+
+output "jenkins_admin_password" {
+  description = "Початковий пароль admin для Jenkins"
+  value       = module.jenkins.jenkins_admin_password
+  sensitive   = true
+}
+
+# ============================================
+# Argo CD
+# ============================================
+output "argocd_namespace" {
+  description = "Namespace де встановлено Argo CD"
+  value       = module.argo_cd.argocd_namespace
+}
+
+output "argocd_admin_password" {
+  description = "Початковий пароль admin для Argo CD"
+  value       = module.argo_cd.argocd_admin_password
+  sensitive   = true
 }
