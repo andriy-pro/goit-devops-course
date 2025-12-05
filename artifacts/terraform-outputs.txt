@@ -1,6 +1,0 @@
-configure_kubectl = "aws eks update-kubeconfig --region eu-north-1 --name lesson-7-eks"
-ecr_repository_url = "943538517680.dkr.ecr.eu-north-1.amazonaws.com/lesson-7-django"
-eks_cluster_endpoint = "https://CAA920168A956CFE84D0705172D178D6.gr7.eu-north-1.eks.amazonaws.com"
-eks_cluster_name = "lesson-7-eks"
-s3_bucket_name = "goit-lesson-7-andriy-pro-20251203"
-vpc_id = "vpc-051fc1e8a950986ec"

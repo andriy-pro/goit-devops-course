@@ -23,7 +23,7 @@ provider "aws" {
   # Теги додаються до ВСІХ ресурсів автоматично
   default_tags {
     tags = {
-      Project     = "lesson-7"
+      Project     = "lesson-9"
       Environment = "learning"
       ManagedBy   = "terraform"
     }

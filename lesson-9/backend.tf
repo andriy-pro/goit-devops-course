@@ -7,10 +7,10 @@
 
 # terraform {
 #   backend "s3" {
-#     bucket         = "goit-lesson-7-andriy-pro-20251203"
-#     key            = "lesson-7/terraform.tfstate"
+#     bucket         = "goit-lesson-9-andriy-pro-20251203"
+#     key            = "lesson-9/terraform.tfstate"
 #     region         = "eu-north-1"
-#     dynamodb_table = "terraform-locks-lesson-7"
+#     dynamodb_table = "terraform-locks-lesson-9"
 #     encrypt        = true
 #   }
 # }

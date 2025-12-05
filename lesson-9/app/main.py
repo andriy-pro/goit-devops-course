@@ -10,7 +10,7 @@ from django.urls import path
 if not settings.configured:
     settings.configure(
         DEBUG=os.environ.get("DEBUG", "False").lower() == "true",
-        SECRET_KEY=os.environ.get("SECRET_KEY", "lesson-7-secret-key"),
+        SECRET_KEY=os.environ.get("SECRET_KEY", "lesson-9-secret-key"),
         ROOT_URLCONF=__name__,
         ALLOWED_HOSTS=["*"],
         # Для спрощення - SQLite
@@ -27,7 +27,7 @@ def index(request):
     """Головна сторінка"""
     pod_name = os.environ.get("HOSTNAME", "unknown")
     return HttpResponse(
-        f"<h1>Lesson-7: Kubernetes + Helm</h1>"
+        f"<h1>lesson-9: Kubernetes + Helm</h1>"
         f"<p>Django працює в Kubernetes!</p>"
         f"<p>Pod: <code>{pod_name}</code></p>"
         f"<p>Environment: <code>{os.environ.get('APP_ENV', 'not set')}</code></p>"
