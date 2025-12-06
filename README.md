@@ -472,8 +472,3 @@ aws ec2 describe-nat-gateways --filter "Name=state,Values=available"
 **Рекомендація:** Виконуйте cleanup одразу після тестування!
 
 ---
-
-## Автор
-
-Lesson 9 — CI/CD Pipeline з Jenkins та Argo CD
-GoIT DevOps Course
