@@ -3,7 +3,7 @@
 # ============================================
 image:
   repository: "943538517680.dkr.ecr.eu-north-1.amazonaws.com/lesson-9-django"
-  tag: "2"
+  tag: "3"
   pullPolicy: Always
 
 # ============================================
