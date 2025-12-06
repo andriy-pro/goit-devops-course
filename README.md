@@ -1,53 +1,125 @@
-# Lesson 7: Kubernetes (EKS) + Helm
+# Lesson 9: CI/CD Pipeline з Jenkins та Argo CD
 
-Terraform + Helm проєкт для розгортання Django-застосунку в AWS EKS:
+## Опис проєкту
 
-- **EKS** — керований Kubernetes кластер від AWS
-- **ECR** — приватний Docker registry для образів
-- **Helm Chart** — пакет для deployment з HPA, ConfigMap, Service
-- **VPC** — ізольована мережа (перевикористання з lesson-5)
+Повний CI/CD-конвеєр для автоматичної збірки, публікації та розгортання Django
+застосунку в Kubernetes з використанням GitOps підходу.
+
+### Компоненти
+
+| Компонент     | Призначення                                            |
+| ------------- | ------------------------------------------------------ |
+| **Jenkins**   | CI-сервер для автоматичної збірки образів              |
+| **Kaniko**    | Збірка Docker образів в Kubernetes (без Docker daemon) |
+| **ECR**       | Приватний Docker registry в AWS                        |
+| **Argo CD**   | GitOps CD-платформа для автоматичного розгортання      |
+| **EKS**       | Managed Kubernetes кластер                             |
+| **Helm**      | Пакетний менеджер для Kubernetes                       |
+| **Terraform** | Infrastructure as Code                                 |
+
+---
+
+## Архітектура CI/CD
+
+```mermaid
+flowchart TB
+    subgraph Developer
+        DEV[👨‍💻 Developer]
+    end
+
+    subgraph GitHub
+        GH[📦 GitHub Repository]
+    end
+
+    subgraph Jenkins Pipeline
+        JEN[🔧 Jenkins]
+        KAN[🏗️ Kaniko Build]
+        UPD[📝 Update values.yaml]
+    end
+
+    subgraph AWS
+        ECR[🐳 ECR Registry]
+        EKS[☸️ EKS Cluster]
+    end
+
+    subgraph GitOps
+        ARGO[🔄 Argo CD]
+    end
+
+    subgraph Kubernetes
+        K8S[📱 Django App]
+    end
+
+    DEV -->|git push| GH
+    GH -->|webhook| JEN
+    JEN --> KAN
+    KAN -->|push image| ECR
+    KAN --> UPD
+    UPD -->|git push| GH
+    GH -->|sync| ARGO
+    ARGO -->|deploy| EKS
+    EKS --> K8S
+    K8S -.->|pull image| ECR
+```
+
+### CI/CD Flow (Sequence)
+
+```mermaid
+sequenceDiagram
+    participant Dev as 👨‍💻 Developer
+    participant GH as 📦 GitHub
+    participant Jen as 🔧 Jenkins
+    participant ECR as 🐳 ECR
+    participant Argo as 🔄 Argo CD
+    participant K8s as ☸️ Kubernetes
+
+    Dev->>GH: 1. git push (code changes)
+    GH->>Jen: 2. Trigger pipeline
+    Jen->>Jen: 3. Build with Kaniko
+    Jen->>ECR: 4. Push image:TAG
+    Jen->>GH: 5. Update values.yaml
+    GH->>Argo: 6. Detect changes
+    Argo->>K8s: 7. Sync & Deploy
+    K8s->>ECR: 8. Pull new image
+    K8s->>K8s: 9. Rolling update
+```
+
+---
 
 ## Структура проєкту
 
 ```
-lesson-7/
-├── main.tf              # Підключення модулів
-├── backend.tf           # S3 backend (спочатку закоментований!)
-├── outputs.tf           # Вихідні значення
-├── providers.tf         # AWS + Kubernetes + Helm providers
-├── Dockerfile           # Docker образ Django
-├── requirements.txt     # Python залежності
+lesson-9/
+├── main.tf                    # Головна конфігурація Terraform
+├── backend.tf                 # S3 backend для state
+├── outputs.tf                 # Виходи Terraform
+├── providers.tf               # Провайдери (AWS, Kubernetes, Helm)
+├── variables.tf               # Змінні
+├── Dockerfile                 # Docker образ Django
+├── Jenkinsfile                # Jenkins CI pipeline
+├── requirements.txt           # Python залежності
+├── argocd-application.yaml    # Argo CD Application manifest
 ├── app/
-│   └── main.py          # Django застосунок з health endpoints
+│   └── main.py                # Django застосунок
 ├── modules/
-│   ├── s3-backend/      # S3 bucket + DynamoDB table
-│   ├── vpc/             # VPC з EKS тегами для subnet discovery
-│   ├── ecr/             # ECR repository
-│   └── eks/             # EKS Cluster + Node Group
+│   ├── s3-backend/            # S3 + DynamoDB для Terraform state
+│   ├── vpc/                   # VPC з public/private subnets
+│   ├── ecr/                   # ECR репозиторій
+│   ├── eks/                   # EKS кластер
+│   ├── jenkins/               # Jenkins Helm release
+│   └── argo-cd/               # Argo CD Helm release
 └── charts/
-    └── django-app/
+    └── django-app/            # Helm chart для Django
         ├── Chart.yaml
-        ├── values.yaml
+        ├── values.yaml        # ← Оновлюється Jenkins
         └── templates/
-            ├── _helpers.tpl
-            ├── deployment.yaml
-            ├── service.yaml
-            ├── configmap.yaml
-            └── hpa.yaml
 ```
 
-## Git
+---
 
-Робота ведеться в гілці `lesson-7` (створена від `lesson-5`):
+## Як застосувати Terraform
 
-```bash
-git checkout lesson-5
-git checkout -b lesson-7
-```
-
-## Швидкий старт
-
-### 1. Підготовка
+### Передумови
 
 ```bash
 # Перевірка інструментів
@@ -56,331 +128,352 @@ aws --version       # >= 2.0
 kubectl version     # >= 1.25
 helm version        # >= 3.0
 docker --version    # >= 20.0
-
-# Перевірка авторизації AWS
-aws sts get-caller-identity
 ```
 
-### 2. Deploy інфраструктури
+### Крок 1: Підготовка
 
 ```bash
-cd lesson-7
+# Клонувати репозиторій
+git clone https://github.com/andriy-pro/goit-devops-course.git
+cd goit-devops-course
+git checkout lesson-8-9
 
-# Ініціалізація
+# Перейти в директорію
+cd lesson-9
+```
+
+### Крок 2: Ініціалізація Terraform
+
+```bash
+# Ініціалізація (спочатку з локальним backend)
 terraform init
 
-# Перегляд плану
-terraform plan
+# Перевірка конфігурації
+terraform validate
 
-# Створення ресурсів (⚠️ ~15-20 хвилин, EKS створюється довго)
-terraform apply
-# Введи: yes
+# Перегляд плану
+terraform plan -out=tfplan
 ```
 
-### 3. Налаштування kubectl
+### Крок 3: Застосування
+
+> ⚠️ **УВАГА:** Це створить платні ресурси AWS (~$0.30/год)
 
 ```bash
-# Команда з outputs
-aws eks update-kubeconfig --region eu-north-1 --name lesson-7-eks
+terraform apply tfplan
+```
+
+**Час виконання:** ~25-30 хвилин
+
+### Крок 4: Налаштування kubectl
+
+```bash
+# Оновити kubeconfig
+aws eks update-kubeconfig --region eu-north-1 --name lesson-9-eks
 
 # Перевірка
 kubectl get nodes
 ```
 
-### 4. Push Docker образу в ECR
+Після налаштування в K9s видно всі namespaces:
+
+![K9s Namespaces](assets/screenshots/k9s-namespaces.png)
+
+_K9s: namespaces `jenkins`, `argocd`, `django-app`, `kube-system`_
+
+### Крок 5: Отримання credentials
 
 ```bash
-# ECR URL з terraform output
-ECR_URL=$(terraform output -raw ecr_repository_url)
+# Jenkins
+echo "Jenkins password: $(terraform output -raw jenkins_admin_password)"
+kubectl get svc -n jenkins jenkins -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 
-# Логін в ECR
-aws ecr get-login-password --region eu-north-1 | \
-  docker login --username AWS --password-stdin ${ECR_URL%/*}
-
-# Build та push
-docker build -t django-app:latest .
-docker tag django-app:latest $ECR_URL:latest
-docker push $ECR_URL:latest
+# Argo CD
+echo "Argo CD password: $(terraform output -raw argocd_admin_password)"
+kubectl get svc -n argocd argocd-server -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
 
-### 5. Deploy Helm Chart
+---
+
+## Як перевірити Jenkins Job
+
+### Крок 1: Відкрити Jenkins UI
+
+1. Отримати URL:
+
+   ```bash
+   kubectl get svc -n jenkins jenkins -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+   ```
+
+2. Відкрити в браузері: `http://<URL>:8080`
+3. Логін: `admin` / пароль з `terraform output -raw jenkins_admin_password`
+
+![Jenkins UI](assets/screenshots/jenkins-ui.png)
+
+_Jenkins Dashboard після встановлення_
+
+### Крок 2: Додати Credentials
+
+**Manage Jenkins → Credentials → System → Global credentials → Add Credentials**
+
+#### AWS Credentials
+
+- **Kind:** AWS Credentials
+- **ID:** `aws-credentials`
+- **Access Key ID:** (з `~/.aws/credentials`)
+- **Secret Access Key:** (з `~/.aws/credentials`)
+
+#### GitHub Token
+
+- **Kind:** Secret text
+- **ID:** `github-token`
+- **Secret:** (GitHub Personal Access Token з правами `repo`)
+
+### Крок 3: Створити Pipeline Job
+
+1. **New Item** → назва: `django-app-pipeline` → **Pipeline** → **OK**
+2. **Pipeline** section:
+   - **Definition:** Pipeline script from SCM
+   - **SCM:** Git
+   - **Repository URL:** `https://github.com/andriy-pro/goit-devops-course.git`
+   - **Branch:** `*/lesson-8-9`
+   - **Script Path:** `lesson-9/Jenkinsfile`
+3. **Save**
+
+### Крок 4: Запуск Pipeline
+
+1. Натиснути **Build Now**
+2. Спостерігати за виконанням в **Console Output**
+
+![Jenkins Pipeline Running](assets/screenshots/jenkins-pipeline-running-1.png)
+
+_Pipeline в процесі виконання_
+
+#### Очікувані stages
+
+| Stage                 | Опис                            |
+| --------------------- | ------------------------------- |
+| Checkout              | Клонування репозиторію          |
+| Get ECR Token         | Отримання токена для ECR        |
+| Configure Kaniko Auth | Налаштування авторизації Kaniko |
+| Build & Push Image    | Збірка і пуш образу в ECR       |
+| Update Helm Values    | Оновлення тегу в values.yaml    |
+
+### Перевірка успішності
+
+![Jenkins Pipeline Success](assets/screenshots/jenkins-pipeline-success-2.png)
+
+_Pipeline #2 завершено успішно_
 
 ```bash
-ECR_URL=$(terraform output -raw ecr_repository_url)
+# Перевірити образи в ECR
+aws ecr describe-images --repository-name lesson-9-django --region eu-north-1
 
-helm install django-app ./charts/django-app \
-  --set image.repository=$ECR_URL \
-  --set image.tag=latest
-
-# Перевірка
-kubectl get pods
-kubectl get svc
-kubectl get hpa
+# Перевірити оновлений values.yaml
+git pull origin lesson-8-9
+cat lesson-9/charts/django-app/values.yaml | grep -A2 "image:"
 ```
 
-### 6. Отримання URL застосунку
+### Образи в ECR
+
+Після першого push:
+
+![ECR Initial](assets/screenshots/ecr-images-1.png)
+
+_ECR: один образ з тегами `initial`, `latest`_
+
+Після кількох pipeline builds:
+
+![ECR Multiple](assets/screenshots/ecr-images-3.png)
+
+_ECR: три образи з тегами `initial`, `1`, `2`, `3`, `latest`_
+
+---
+
+## Як побачити результат в Argo CD
+
+### Крок 1: Відкрити Argo CD UI
+
+1. Отримати URL:
+
+   ```bash
+   kubectl get svc -n argocd argocd-server -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+   ```
+
+2. Відкрити в браузері: `http://<URL>`
+3. Логін: `admin` / пароль з `terraform output -raw argocd_admin_password`
+
+![Argo CD UI](assets/screenshots/argocd-ui.png)
+
+_Argo CD Dashboard після встановлення_
+
+### Крок 2: Перевірити Application
+
+1. Відкрити **Applications** → **django-app**
+2. Перевірити статус:
+   - **Sync Status:** Synced (зелений)
+   - **Health Status:** Healthy (зелене серце)
+
+![Argo CD Synced](assets/screenshots/argocd-synced.png)
+
+_Argo CD: Application синхронізовано, всі ресурси Healthy_
+
+### Крок 3: Перевірити автоматичне оновлення
+
+Після Jenkins pipeline:
+
+1. Argo CD виявить зміни в Git
+2. Автоматично синхронізує
+3. Kubernetes виконає rolling update
 
 ```bash
-# Почекати ~2-3 хвилини на LoadBalancer
-kubectl get svc django-app -w
+# Перевірити поточний образ
+kubectl get deployment django-app -n django-app -o jsonpath='{.spec.template.spec.containers[0].image}'
 
-# Отримати URL
-kubectl get svc django-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+# Перевірити поди
+kubectl get pods -n django-app
 ```
 
-### 7. Видалення ресурсів
+![K9s Django Pods](assets/screenshots/k9s-pods-django-app.png)
 
-> ⚠️ **ВАЖЛИВО:** EKS + NAT Gateway коштують ~$5/день. Видаляй одразу після
-> тестування!
+_K9s: 2 поди django-app в статусі Running_
+
+### Крок 4: Перевірити застосунок
 
 ```bash
-# 1. Видалити Helm release
-helm uninstall django-app
+# Отримати URL застосунку
+kubectl get svc django-app -n django-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 
-# 2. Видалити образ з ECR
-aws ecr batch-delete-image \
-  --repository-name lesson-7-django \
-  --image-ids imageTag=latest
-
-# 3. Видалити інфраструктуру
-terraform destroy
+# Або через curl
+APP_URL=$(kubectl get svc django-app -n django-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+curl http://$APP_URL
 ```
 
-## Типові помилки та їх вирішення
+![App Browser Initial](assets/screenshots/app-browser-1.png)
 
-### 1. "Character sets beyond ASCII are not supported"
+_Django застосунок: Version 1.0.0_
 
-**Симптом:**
+---
 
-```
-Error: InvalidParameterValue: Value (Група безпеки для EKS кластера) for parameter GroupDescription is invalid.
-```
+## Тестування повного CI/CD циклу
 
-**Причина:** AWS **не підтримує Unicode/кирилицю** в полі `description` для
-Security Groups.
-
-**Рішення:** Використовуй тільки ASCII символи в `description`:
-
-> 💡 Коментарі в коді (`#`) та `tags` можуть бути українською, але `description`
-> — ні!
-
-### 2. "AccessDenied: iam:CreateRole"
-
-**Симптом:**
-
-```
-Error: User is not authorized to perform: iam:CreateRole
-```
-
-**Причина:** IAM користувач не має прав на створення IAM ролей для EKS.
-
-**Рішення:** Додай політику в AWS Console:
-
-1. IAM → Users → твій користувач
-2. Add permissions → Attach policies directly
-3. Додай `IAMFullAccess` (або custom policy з `iam:CreateRole`,
-   `iam:AttachRolePolicy`)
-
-### 3. "NoSuchBucket" при terraform apply/destroy
-
-**Симптом:**
-
-```
-Error: failed to upload state: api error NoSuchBucket: The specified bucket does not exist
-```
-
-**Причина:** S3 backend розкоментований, але bucket ще не створено (або вже
-видалено).
-
-**Рішення:**
+### 1. Внести зміну в код
 
 ```bash
-# 1. Закоментуй backend "s3" {...} в backend.tf
+# Редагувати app/main.py
+# Змінити версію або текст
 
-# 2. Видали локальні state файли
-rm -f errored.tfstate terraform.tfstate terraform.tfstate.backup
-
-# 3. Очисти .terraform
-rm -rf .terraform
-
-# 4. Переініціалізуй
-terraform init
+git add lesson-9/app/main.py
+git commit -m "feat: Update app version"
+git push origin lesson-8-9
 ```
 
-**Правильний порядок роботи з S3 backend:**
+### 2. Запустити Jenkins Pipeline
 
-1. `backend.tf` **закоментований** → `terraform apply` (створює S3)
-2. `backend.tf` **розкоментований** → `terraform init -migrate-state`
+1. Jenkins → django-app-pipeline → Build Now
+2. Дочекатися завершення (SUCCESS)
 
-### 4. K9s показує "Context: n/a"
-
-**Симптом:**
-
-```
-Context: n/a
-Cluster: n/a
-User:    n/a
-```
-
-**Причина:** Кластер ще не створено, або kubectl не налаштований.
-
-**Рішення:** K9s запрацює **після**:
+### 3. Перевірити результат
 
 ```bash
-# 1. Створення кластера
-terraform apply
+# ECR - новий образ
+aws ecr describe-images --repository-name lesson-9-django --region eu-north-1 | jq '.imageDetails[].imageTags'
 
-# 2. Налаштування kubectl
-aws eks update-kubeconfig --region eu-north-1 --name lesson-7-eks
+# Argo CD - синхронізовано
+kubectl get applications -n argocd
 
-# 3. Тепер K9s працюватиме
-k9s
+# Застосунок - оновлено
+curl http://$APP_URL
 ```
 
-### 5. "Kubernetes version is no longer supported"
+![App Updated](assets/screenshots/app-updated.png)
 
-**Симптом:** Попередження в AWS Console про deprecated версію.
+_Django застосунок оновлено: Version 2.0.0 — GitOps in action!_
 
-**Причина:** Версія 1.28 End of Support (з листопада 2024).
-
-**Рішення:** Для навчального проєкту — **ігнорувати**. Кластер працює нормально.
-
-Для production — оновити версію в `modules/eks/variables.tf`:
-
-```hcl
-variable "kubernetes_version" {
-  default = "1.30"  # Замість 1.28
-}
-```
-
-### 6. "ImagePullBackOff" — Pod не може завантажити образ
-
-**Симптом:**
-
-```bash
-kubectl get pods
-# STATUS: ImagePullBackOff
-```
-
-**Причина:** Образ не існує в ECR, або ECR URL неправильний.
-
-**Рішення:**
-
-```bash
-# 1. Перевір образи в ECR
-aws ecr describe-images --repository-name lesson-7-django
-
-# 2. Перевір ECR URL в helm values
-helm get values django-app
-
-# 3. Якщо образу немає — запуш
-docker push $ECR_URL:latest
-```
+---
 
 ## Корисні команди
+
+### Terraform
+
+```bash
+terraform output                          # Всі виходи
+terraform output -raw jenkins_admin_password  # Пароль Jenkins
+terraform output -raw argocd_admin_password   # Пароль Argo CD
+terraform destroy                         # Видалення всіх ресурсів
+```
 
 ### kubectl
 
 ```bash
-kubectl get nodes              # Список worker nodes
-kubectl get pods               # Список pods
-kubectl get svc                # Список services
-kubectl get hpa                # Статус автоскейлера
-kubectl logs <pod-name>        # Логи pod
-kubectl describe pod <name>    # Детальна інфо
-kubectl exec -it <pod> -- sh   # Shell в pod
+kubectl get pods -A                       # Всі поди
+kubectl get pods -n jenkins               # Поди Jenkins
+kubectl get pods -n argocd                # Поди Argo CD
+kubectl get pods -n django-app            # Поди застосунку
+kubectl get svc -A                        # Всі сервіси
+kubectl logs -n jenkins -l app.kubernetes.io/name=jenkins  # Логи Jenkins
 ```
 
-### Helm
+### K9s (рекомендовано)
 
 ```bash
-helm list                      # Список releases
-helm install <name> <chart>    # Встановлення
-helm upgrade <name> <chart>    # Оновлення
-helm uninstall <name>          # Видалення
-helm template <name> <chart>   # Dry-run (показати YAML)
+k9s                 # Запуск
+:ns                 # Перегляд namespaces
+:pods               # Всі поди
+:pods jenkins       # Поди в namespace jenkins
+:svc                # Сервіси
+:apps argocd        # Argo CD Applications
 ```
 
-### K9s (рекомендовано!)
+### AWS CLI
 
 ```bash
-k9s                            # Запуск
-# :pods   — перегляд pods
-# :svc    — перегляд services
-# :hpa    — перегляд HPA
-# l       — логи
-# d       — describe
-# q       — вихід
+aws eks list-clusters                     # Список кластерів
+aws ecr describe-repositories             # ECR репозиторії
+aws ecr describe-images --repository-name lesson-9-django --region eu-north-1
 ```
-
-## Вартість
-
-| Ресурс            | Вартість                 |
-| ----------------- | ------------------------ |
-| EKS Control Plane | $0.10/год (~$2.40/день)  |
-| EC2 t3.small x2   | $0.04/год (~$0.96/день)  |
-| NAT Gateway       | $0.045/год (~$1.08/день) |
-| LoadBalancer      | $0.025/год (~$0.60/день) |
-| S3, DynamoDB, ECR | Free Tier                |
-| **РАЗОМ**         | **~$5/день**             |
-
-> 💡 Завжди виконуй `terraform destroy` після тестування!
-
-## Корисні посилання
-
-- [Amazon EKS Documentation](https://docs.aws.amazon.com/eks/)
-- [Helm Documentation](https://helm.sh/docs/)
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [K9s — Kubernetes CLI](https://k9scli.io/)
 
 ---
 
-## Скріншоти виконаної роботи
+## Cleanup (ОБОВ'ЯЗКОВО!)
 
-### K9s — Pods
+> ⚠️ **ВАЖЛИВО:** Після завершення роботи видаліть ресурси, щоб уникнути витрат!
 
-![K9s Pods](assets/screenshots/k9s-pods.png)
+```bash
+# 1. Видалити Argo CD Application
+kubectl delete application django-app -n argocd
 
-_K9s показує 2 pods Django застосунку в статусі Running_
+# 2. Видалити Django deployment (якщо існує)
+kubectl delete deployment django-app -n django-app 2>/dev/null || true
+kubectl delete svc django-app -n django-app 2>/dev/null || true
 
-### K9s — Services
+# 3. Terraform destroy
+cd lesson-9
+terraform destroy
 
-![K9s Services](assets/screenshots/k9s-service.png)
+# 4. Перевірити, що всі ресурси видалені
+aws eks list-clusters
+aws ec2 describe-addresses --query 'Addresses[?AssociationId==`null`]'
+aws ec2 describe-nat-gateways --filter "Name=state,Values=available"
+```
 
-_K9s показує LoadBalancer service з External IP_
+---
 
-### Django App у браузері
+## Вартість
 
-![App Browser](assets/screenshots/app-browser.png)
+| Компонент               | Вартість/год        |
+| ----------------------- | ------------------- |
+| EKS Control Plane       | $0.10               |
+| EC2 SPOT (t3.medium x2) | ~$0.02-0.04         |
+| NAT Gateway             | $0.045              |
+| Load Balancers (x3)     | $0.075              |
+| **РАЗОМ**               | **~$0.25-0.30/год** |
 
-_Django працює в Kubernetes! Видно Pod name та Environment_
+**Рекомендація:** Виконуйте cleanup одразу після тестування!
 
-### Health Endpoint
+---
 
-![Health Endpoint](assets/screenshots/app-browser-health.png)
+## Автор
 
-_Endpoint `/health` повертає `{"status": "healthy"}`_
-
-### Ready Endpoint
-
-![Ready Endpoint](assets/screenshots/app-browser-ready.png)
-
-_Endpoint `/ready` повертає `{"status": "ready"}`_
-
-### ECR Repository
-
-![ECR Image](assets/screenshots/ecr-image.png)
-
-_Docker образ `lesson-7-django:latest` в Amazon ECR_
-
-### EKS Cluster
-
-![EKS Cluster](assets/screenshots/eks-cluster.png)
-
-_EKS кластер `lesson-7-eks` в AWS Console_
-
-### EKS Observability Dashboard
-
-![EKS Observability](assets/screenshots/eks-observability-dashboard.png)
-
-_Observability dashboard показує метрики кластера_
+Lesson 9 — CI/CD Pipeline з Jenkins та Argo CD
+GoIT DevOps Course
