@@ -1,0 +1,132 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  containers:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:debug
+    command:
+    - sleep
+    args:
+    - "infinity"
+    volumeMounts:
+    - name: docker-config
+      mountPath: /kaniko/.docker
+  - name: git
+    image: alpine/git:latest
+    command:
+    - sleep
+    args:
+    - "infinity"
+  volumes:
+  - name: docker-config
+    emptyDir: {}
+'''
+        }
+    }
+    
+    environment {
+        AWS_REGION = 'eu-north-1'
+        AWS_ACCOUNT_ID = '943538517680'
+        ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        ECR_REPOSITORY = 'lesson-9-django'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        GIT_REPO = 'https://github.com/andriy-pro/goit-devops-course.git'
+        GIT_BRANCH = 'lesson-8-9'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        
+        stage('Configure ECR Auth') {
+            steps {
+                container('kaniko') {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                      credentialsId: 'aws-credentials']]) {
+                        sh '''
+                            # Встановлюємо AWS CLI (lightweight)
+                            wget -q https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -O /tmp/awscliv2.zip
+                            unzip -q /tmp/awscliv2.zip -d /tmp
+                            /tmp/aws/install --bin-dir /usr/local/bin --install-dir /tmp/aws-cli
+                            
+                            # Отримуємо ECR токен
+                            aws ecr get-login-password --region ${AWS_REGION} > /tmp/ecr-password
+                            
+                            # Створюємо Docker config для Kaniko
+                            AUTH=$(cat /tmp/ecr-password | base64 -w 0)
+                            cat > /kaniko/.docker/config.json << EOF
+{
+    "auths": {
+        "${ECR_REGISTRY}": {
+            "auth": "${AUTH}"
+        }
+    }
+}
+EOF
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Build & Push Image') {
+            steps {
+                container('kaniko') {
+                    sh '''
+                        /kaniko/executor \
+                            --context=dir://$(pwd)/lesson-9 \
+                            --dockerfile=$(pwd)/lesson-9/Dockerfile \
+                            --destination=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} \
+                            --destination=${ECR_REGISTRY}/${ECR_REPOSITORY}:latest \
+                            --cache=true
+                    '''
+                }
+            }
+        }
+        
+        stage('Update Helm Values') {
+            steps {
+                container('git') {
+                    withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                        sh '''
+                            cd lesson-9/charts/django-app
+                            
+                            # Оновлюємо tag в values.yaml
+                            sed -i "s|tag: .*|tag: \\"${IMAGE_TAG}\\"|" values.yaml
+                            
+                            # Налаштування git
+                            git config --global user.email "jenkins@lesson-9.local"
+                            git config --global user.name "Jenkins CI"
+                            git config --global --add safe.directory $(pwd)
+                            
+                            # Комітимо та пушимо
+                            git add values.yaml
+                            git commit -m "ci: Update image tag to ${IMAGE_TAG}" || true
+                            
+                            # Push з токеном
+                            git push https://${GITHUB_TOKEN}@github.com/andriy-pro/goit-devops-course.git HEAD:${GIT_BRANCH}
+                        '''
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo "✅ Pipeline успішно завершено! Image tag: ${IMAGE_TAG}"
+        }
+        failure {
+            echo "❌ Pipeline завершено з помилкою"
+        }
+    }
+}
+

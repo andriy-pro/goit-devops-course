@@ -26,11 +26,14 @@ if not settings.configured:
 def index(request):
     """Головна сторінка"""
     pod_name = os.environ.get("HOSTNAME", "unknown")
+    version = os.environ.get("APP_VERSION", "1.0.0")
     return HttpResponse(
-        f"<h1>lesson-9: Kubernetes + Helm</h1>"
+        f"<h1>🚀 Lesson-9: CI/CD with Argo CD</h1>"
         f"<p>Django працює в Kubernetes!</p>"
+        f"<p>Version: <code>{version}</code></p>"
         f"<p>Pod: <code>{pod_name}</code></p>"
         f"<p>Environment: <code>{os.environ.get('APP_ENV', 'not set')}</code></p>"
+        f"<p><em>Deployed via GitOps pipeline!</em></p>"
     )
 
 
