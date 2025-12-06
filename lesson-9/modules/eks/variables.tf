@@ -25,6 +25,12 @@ variable "instance_types" {
   default     = ["t3.small"]
 }
 
+variable "capacity_type" {
+  description = "Тип capacity для Node Group: ON_DEMAND або SPOT"
+  type        = string
+  default     = "ON_DEMAND"
+}
+
 variable "desired_nodes" {
   description = "Бажана кількість worker nodes"
   type        = number

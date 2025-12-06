@@ -14,8 +14,10 @@ resource "helm_release" "jenkins" {
   values = [
     yamlencode({
       controller = {
-        # Використовуємо JDK21 (LTS)
-        tag = "lts-jdk21"
+        # Використовуємо JDK21 (LTS) - нова структура для версії 5.x
+        image = {
+          tag = "lts-jdk21"
+        }
 
         serviceType = "LoadBalancer"
 
@@ -40,13 +42,16 @@ resource "helm_release" "jenkins" {
 
       agent = {
         enabled = true
-        image   = "jenkins/inbound-agent"
-        tag     = "latest"
+        image = {
+          repository = "jenkins/inbound-agent"
+          tag        = "latest"
+        }
       }
 
+      # Persistence вимкнено (EKS потребує EBS CSI driver)
+      # Для production потрібно встановити aws-ebs-csi-driver
       persistence = {
-        enabled = true
-        size    = "10Gi"
+        enabled = false
       }
     })
   ]

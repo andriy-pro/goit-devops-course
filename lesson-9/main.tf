@@ -48,14 +48,18 @@ module "eks" {
   source = "./modules/eks"
 
   cluster_name       = local.cluster_name
-  kubernetes_version = "1.30" # Оновлено з 1.28 (End of Support)
+  kubernetes_version = "1.30"
   vpc_id             = module.vpc.vpc_id
   subnet_ids         = module.vpc.private_subnet_ids
 
-  instance_types = ["t3.medium"]
-  desired_nodes  = 2
-  min_nodes      = 2
-  max_nodes      = 4
+  # SPOT інстанси - дешевше на 60-90% (обходить Free Tier обмеження)
+  # eu-north-1 не має t3a, використовуємо тільки t3
+  capacity_type  = "SPOT"
+  instance_types = ["t3.medium", "t3.small"]
+
+  desired_nodes = 2
+  min_nodes     = 2
+  max_nodes     = 4
 }
 
 # ============================================

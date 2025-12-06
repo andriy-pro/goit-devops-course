@@ -37,8 +37,11 @@ resource "aws_eks_node_group" "main" {
     max_size     = var.max_nodes
   }
 
-  # Тип інстансів (t3.small для Free Tier)
+  # Тип інстансів
   instance_types = var.instance_types
+
+  # SPOT або ON_DEMAND (SPOT дешевше на 60-90%)
+  capacity_type = var.capacity_type
 
   # Використовуємо AL2 (Amazon Linux 2)
   ami_type = "AL2_x86_64"
