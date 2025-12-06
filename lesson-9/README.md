@@ -2,75 +2,87 @@
 
 ## Опис проєкту
 
-Повний CI/CD-конвеєр для автоматичної збірки, публікації та розгортання Django застосунку в Kubernetes з використанням GitOps підходу.
+Повний CI/CD-конвеєр для автоматичної збірки, публікації та розгортання Django
+застосунку в Kubernetes з використанням GitOps підходу.
 
 ### Компоненти
 
-| Компонент | Призначення |
-|-----------|-------------|
-| **Jenkins** | CI-сервер для автоматичної збірки образів |
-| **Kaniko** | Збірка Docker образів в Kubernetes (без Docker daemon) |
-| **ECR** | Приватний Docker registry в AWS |
-| **Argo CD** | GitOps CD-платформа для автоматичного розгортання |
-| **EKS** | Managed Kubernetes кластер |
-| **Helm** | Пакетний менеджер для Kubernetes |
-| **Terraform** | Infrastructure as Code |
+| Компонент     | Призначення                                            |
+| ------------- | ------------------------------------------------------ |
+| **Jenkins**   | CI-сервер для автоматичної збірки образів              |
+| **Kaniko**    | Збірка Docker образів в Kubernetes (без Docker daemon) |
+| **ECR**       | Приватний Docker registry в AWS                        |
+| **Argo CD**   | GitOps CD-платформа для автоматичного розгортання      |
+| **EKS**       | Managed Kubernetes кластер                             |
+| **Helm**      | Пакетний менеджер для Kubernetes                       |
+| **Terraform** | Infrastructure as Code                                 |
 
 ---
 
 ## Архітектура CI/CD
 
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Developer  │────▶│   GitHub    │────▶│   Jenkins   │
-│  git push   │     │ Repository  │     │  Pipeline   │
-└─────────────┘     └─────────────┘     └──────┬──────┘
-                                               │
-                    ┌──────────────────────────┼──────────────────────────┐
-                    │                          ▼                          │
-                    │  ┌─────────────┐   ┌─────────────┐                  │
-                    │  │   Kaniko    │──▶│     ECR     │                  │
-                    │  │   Build     │   │   Registry  │                  │
-                    │  └─────────────┘   └─────────────┘                  │
-                    │         │                │                          │
-                    │         ▼                │                          │
-                    │  ┌─────────────┐         │                          │
-                    │  │   Update    │         │                          │
-                    │  │ values.yaml │         │                          │
-                    │  └──────┬──────┘         │                          │
-                    │         │                │                          │
-                    │         ▼                │                          │
-                    │  ┌─────────────┐         │                          │
-                    │  │  Git Push   │         │                          │
-                    │  └──────┬──────┘         │                          │
-                    │         │                │                          │
-                    └─────────┼────────────────┼──────────────────────────┘
-                              │                │
-                              ▼                │
-                    ┌─────────────┐            │
-                    │   Argo CD   │◀───────────┘
-                    │    Sync     │
-                    └──────┬──────┘
-                           │
-                           ▼
-                    ┌─────────────┐
-                    │ Kubernetes  │
-                    │   Deploy    │
-                    └─────────────┘
+```mermaid
+flowchart TB
+    subgraph Developer
+        DEV[👨‍💻 Developer]
+    end
+
+    subgraph GitHub
+        GH[📦 GitHub Repository]
+    end
+
+    subgraph Jenkins Pipeline
+        JEN[🔧 Jenkins]
+        KAN[🏗️ Kaniko Build]
+        UPD[📝 Update values.yaml]
+    end
+
+    subgraph AWS
+        ECR[🐳 ECR Registry]
+        EKS[☸️ EKS Cluster]
+    end
+
+    subgraph GitOps
+        ARGO[🔄 Argo CD]
+    end
+
+    subgraph Kubernetes
+        K8S[📱 Django App]
+    end
+
+    DEV -->|git push| GH
+    GH -->|webhook| JEN
+    JEN --> KAN
+    KAN -->|push image| ECR
+    KAN --> UPD
+    UPD -->|git push| GH
+    GH -->|sync| ARGO
+    ARGO -->|deploy| EKS
+    EKS --> K8S
+    K8S -.->|pull image| ECR
 ```
 
-### CI/CD Flow
+### CI/CD Flow (Sequence)
 
-1. **Developer** робить `git push` з змінами коду
-2. **Jenkins** запускає pipeline:
-   - Клонує репозиторій
-   - **Kaniko** будує Docker образ
-   - Пушить образ в **ECR** з новим тегом
-   - Оновлює `values.yaml` з новим тегом
-   - Пушить зміни в Git
-3. **Argo CD** виявляє зміни в Git
-4. **Argo CD** синхронізує Helm chart
-5. **Kubernetes** виконує rolling update
+```mermaid
+sequenceDiagram
+    participant Dev as 👨‍💻 Developer
+    participant GH as 📦 GitHub
+    participant Jen as 🔧 Jenkins
+    participant ECR as 🐳 ECR
+    participant Argo as 🔄 Argo CD
+    participant K8s as ☸️ Kubernetes
+
+    Dev->>GH: 1. git push (code changes)
+    GH->>Jen: 2. Trigger pipeline
+    Jen->>Jen: 3. Build with Kaniko
+    Jen->>ECR: 4. Push image:TAG
+    Jen->>GH: 5. Update values.yaml
+    GH->>Argo: 6. Detect changes
+    Argo->>K8s: 7. Sync & Deploy
+    K8s->>ECR: 8. Pull new image
+    K8s->>K8s: 9. Rolling update
+```
 
 ---
 
@@ -163,6 +175,12 @@ aws eks update-kubeconfig --region eu-north-1 --name lesson-9-eks
 kubectl get nodes
 ```
 
+Після налаштування в K9s видно всі namespaces:
+
+![K9s Namespaces](../assets/screenshots/k9s-namespaces.png)
+
+_K9s: namespaces `jenkins`, `argocd`, `django-app`, `kube-system`_
+
 ### Крок 5: Отримання credentials
 
 ```bash
@@ -182,23 +200,31 @@ kubectl get svc -n argocd argocd-server -o jsonpath='{.status.loadBalancer.ingre
 ### Крок 1: Відкрити Jenkins UI
 
 1. Отримати URL:
+
    ```bash
    kubectl get svc -n jenkins jenkins -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
    ```
+
 2. Відкрити в браузері: `http://<URL>:8080`
 3. Логін: `admin` / пароль з `terraform output -raw jenkins_admin_password`
+
+![Jenkins UI](../assets/screenshots/jenkins-ui.png)
+
+_Jenkins Dashboard після встановлення_
 
 ### Крок 2: Додати Credentials
 
 **Manage Jenkins → Credentials → System → Global credentials → Add Credentials**
 
-#### AWS Credentials:
+#### AWS Credentials
+
 - **Kind:** AWS Credentials
 - **ID:** `aws-credentials`
 - **Access Key ID:** (з `~/.aws/credentials`)
 - **Secret Access Key:** (з `~/.aws/credentials`)
 
-#### GitHub Token:
+#### GitHub Token
+
 - **Kind:** Secret text
 - **ID:** `github-token`
 - **Secret:** (GitHub Personal Access Token з правами `repo`)
@@ -219,17 +245,25 @@ kubectl get svc -n argocd argocd-server -o jsonpath='{.status.loadBalancer.ingre
 1. Натиснути **Build Now**
 2. Спостерігати за виконанням в **Console Output**
 
-#### Очікувані stages:
+![Jenkins Pipeline Running](../assets/screenshots/jenkins-pipeline-running-1.png)
 
-| Stage | Опис |
-|-------|------|
-| Checkout | Клонування репозиторію |
-| Get ECR Token | Отримання токена для ECR |
+_Pipeline в процесі виконання_
+
+#### Очікувані stages
+
+| Stage                 | Опис                            |
+| --------------------- | ------------------------------- |
+| Checkout              | Клонування репозиторію          |
+| Get ECR Token         | Отримання токена для ECR        |
 | Configure Kaniko Auth | Налаштування авторизації Kaniko |
-| Build & Push Image | Збірка і пуш образу в ECR |
-| Update Helm Values | Оновлення тегу в values.yaml |
+| Build & Push Image    | Збірка і пуш образу в ECR       |
+| Update Helm Values    | Оновлення тегу в values.yaml    |
 
 ### Перевірка успішності
+
+![Jenkins Pipeline Success](../assets/screenshots/jenkins-pipeline-success-2.png)
+
+_Pipeline #2 завершено успішно_
 
 ```bash
 # Перевірити образи в ECR
@@ -240,6 +274,20 @@ git pull origin lesson-8-9
 cat lesson-9/charts/django-app/values.yaml | grep -A2 "image:"
 ```
 
+### Образи в ECR
+
+Після першого push:
+
+![ECR Initial](../assets/screenshots/ecr-images-1.png)
+
+_ECR: один образ з тегами `initial`, `latest`_
+
+Після кількох pipeline builds:
+
+![ECR Multiple](../assets/screenshots/ecr-images-3.png)
+
+_ECR: три образи з тегами `initial`, `1`, `2`, `3`, `latest`_
+
 ---
 
 ## Як побачити результат в Argo CD
@@ -247,11 +295,17 @@ cat lesson-9/charts/django-app/values.yaml | grep -A2 "image:"
 ### Крок 1: Відкрити Argo CD UI
 
 1. Отримати URL:
+
    ```bash
    kubectl get svc -n argocd argocd-server -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
    ```
+
 2. Відкрити в браузері: `http://<URL>`
 3. Логін: `admin` / пароль з `terraform output -raw argocd_admin_password`
+
+![Argo CD UI](../assets/screenshots/argocd-ui.png)
+
+_Argo CD Dashboard після встановлення_
 
 ### Крок 2: Перевірити Application
 
@@ -260,9 +314,14 @@ cat lesson-9/charts/django-app/values.yaml | grep -A2 "image:"
    - **Sync Status:** Synced (зелений)
    - **Health Status:** Healthy (зелене серце)
 
+![Argo CD Synced](../assets/screenshots/argocd-synced.png)
+
+_Argo CD: Application синхронізовано, всі ресурси Healthy_
+
 ### Крок 3: Перевірити автоматичне оновлення
 
 Після Jenkins pipeline:
+
 1. Argo CD виявить зміни в Git
 2. Автоматично синхронізує
 3. Kubernetes виконає rolling update
@@ -275,6 +334,10 @@ kubectl get deployment django-app -n django-app -o jsonpath='{.spec.template.spe
 kubectl get pods -n django-app
 ```
 
+![K9s Django Pods](../assets/screenshots/k9s-pods-django-app.png)
+
+_K9s: 2 поди django-app в статусі Running_
+
 ### Крок 4: Перевірити застосунок
 
 ```bash
@@ -285,6 +348,10 @@ kubectl get svc django-app -n django-app -o jsonpath='{.status.loadBalancer.ingr
 APP_URL=$(kubectl get svc django-app -n django-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 curl http://$APP_URL
 ```
+
+![App Browser Initial](../assets/screenshots/app-browser-1.png)
+
+_Django застосунок: Version 1.0.0_
 
 ---
 
@@ -318,6 +385,10 @@ kubectl get applications -n argocd
 # Застосунок - оновлено
 curl http://$APP_URL
 ```
+
+![App Updated](../assets/screenshots/app-updated.png)
+
+_Django застосунок оновлено: Version 2.0.0 — GitOps in action!_
 
 ---
 
@@ -390,42 +461,19 @@ aws ec2 describe-nat-gateways --filter "Name=state,Values=available"
 
 ## Вартість
 
-| Компонент | Вартість/год |
-|-----------|-------------|
-| EKS Control Plane | $0.10 |
-| EC2 SPOT (t3.medium x2) | ~$0.02-0.04 |
-| NAT Gateway | $0.045 |
-| Load Balancers (x3) | $0.075 |
-| **РАЗОМ** | **~$0.25-0.30/год** |
+| Компонент               | Вартість/год        |
+| ----------------------- | ------------------- |
+| EKS Control Plane       | $0.10               |
+| EC2 SPOT (t3.medium x2) | ~$0.02-0.04         |
+| NAT Gateway             | $0.045              |
+| Load Balancers (x3)     | $0.075              |
+| **РАЗОМ**               | **~$0.25-0.30/год** |
 
 **Рекомендація:** Виконуйте cleanup одразу після тестування!
 
 ---
 
-## Troubleshooting
-
-Детальний опис проблем та їх вирішення див. у:
-[`.docs/lesson-9/lesson-9-plan.md`](../.docs/lesson-9/lesson-9-plan.md#troubleshooting)
-
-### Найчастіші проблеми
-
-| Проблема | Рішення |
-|----------|---------|
-| Jenkins pod Pending (PVC) | Вимкнути persistence в модулі Jenkins |
-| Kaniko не може пушити в ECR | Перевірити AWS credentials в Jenkins |
-| Argo CD не синхронізує | Примусова синхронізація через UI |
-| EKS Node Group failed | Використати SPOT інстанси |
-
----
-
 ## Автор
 
-Lesson 9 — CI/CD Pipeline з Jenkins та Argo CD  
+Lesson 9 — CI/CD Pipeline з Jenkins та Argo CD
 GoIT DevOps Course
-
----
-
-## Ліцензія
-
-MIT
-
