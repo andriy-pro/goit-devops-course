@@ -2,8 +2,8 @@
 # Налаштування образу
 # ============================================
 image:
-  repository: "" # Буде замінено на ECR URL
-  tag: "latest"
+  repository: "943538517680.dkr.ecr.eu-north-1.amazonaws.com/lesson-9-django"
+  tag: "initial"  # Перший образ, що ми завантажили
   pullPolicy: Always
 
 # ============================================
