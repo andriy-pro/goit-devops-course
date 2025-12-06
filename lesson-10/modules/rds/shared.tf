@@ -53,7 +53,7 @@ resource "random_password" "master" {
 
 resource "aws_db_subnet_group" "main" {
   name        = "${var.identifier}-subnet-group"
-  description = "Група підмереж для ${var.identifier}"
+  description = "Subnet group for ${var.identifier}" # AWS не підтримує кирилицю
   subnet_ids  = var.subnet_ids # список приватних підмереж
 
   tags = merge(var.tags, {
@@ -70,7 +70,7 @@ resource "aws_db_subnet_group" "main" {
 
 resource "aws_security_group" "main" {
   name        = "${var.identifier}-sg"
-  description = "Security group для бази даних ${var.identifier}"
+  description = "Security group for ${var.identifier} database" # AWS не підтримує кирилицю
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, {
@@ -133,15 +133,16 @@ resource "aws_db_parameter_group" "main" {
 
   name        = "${var.identifier}-params"
   family      = local.parameter_family
-  description = "Parameter group для ${var.identifier}"
+  description = "Parameter group for ${var.identifier}" # AWS не підтримує кирилицю
 
   # --- PostgreSQL параметри ---
   # Ці параметри специфічні для PostgreSQL
   dynamic "parameter" {
     for_each = contains(["postgres"], var.engine) ? [1] : []
     content {
-      name  = "max_connections"
-      value = var.max_connections
+      name         = "max_connections"
+      value        = var.max_connections
+      apply_method = "pending-reboot" # статичний параметр, вимагає reboot
     }
   }
 
@@ -165,8 +166,9 @@ resource "aws_db_parameter_group" "main" {
   dynamic "parameter" {
     for_each = contains(["mysql", "mariadb"], var.engine) ? [1] : []
     content {
-      name  = "max_connections"
-      value = var.max_connections
+      name         = "max_connections"
+      value        = var.max_connections
+      apply_method = "pending-reboot" # статичний параметр
     }
   }
 
@@ -192,14 +194,15 @@ resource "aws_rds_cluster_parameter_group" "main" {
 
   name        = "${var.identifier}-cluster-params"
   family      = local.parameter_family
-  description = "Cluster parameter group для ${var.identifier}"
+  description = "Cluster parameter group for ${var.identifier}" # AWS не підтримує кирилицю
 
   # --- Aurora PostgreSQL параметри ---
   dynamic "parameter" {
     for_each = var.engine == "aurora-postgresql" ? [1] : []
     content {
-      name  = "max_connections"
-      value = var.max_connections
+      name         = "max_connections"
+      value        = var.max_connections
+      apply_method = "pending-reboot" # статичний параметр
     }
   }
 
@@ -223,8 +226,9 @@ resource "aws_rds_cluster_parameter_group" "main" {
   dynamic "parameter" {
     for_each = var.engine == "aurora-mysql" ? [1] : []
     content {
-      name  = "max_connections"
-      value = var.max_connections
+      name         = "max_connections"
+      value        = var.max_connections
+      apply_method = "pending-reboot" # статичний параметр
     }
   }
 

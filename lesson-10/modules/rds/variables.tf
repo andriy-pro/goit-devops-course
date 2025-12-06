@@ -30,9 +30,9 @@ variable "engine" {
 }
 
 variable "engine_version" {
-  description = "Версія engine. Приклади: 15.4 для PostgreSQL, 8.0.35 для MySQL"
+  description = "Версія engine. Приклади: 15.15 для PostgreSQL, 8.0.35 для MySQL"
   type        = string
-  default     = "15.4"
+  default     = "15.15"
 }
 
 variable "instance_class" {
@@ -65,9 +65,9 @@ variable "db_name" {
 }
 
 variable "db_username" {
-  description = "Master username для підключення до бази даних"
+  description = "Master username для підключення до бази даних. Не використовуйте 'admin' - це зарезервоване слово"
   type        = string
-  default     = "admin"
+  default     = "dbadmin"
 }
 
 variable "db_password" {

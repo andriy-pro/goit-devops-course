@@ -42,13 +42,13 @@ module "rds_postgres" {
   identifier     = "lesson-10-postgres"
   use_aurora     = false         # false = RDS Instance
   engine         = "postgres"    # PostgreSQL
-  engine_version = "15.4"        # версія PostgreSQL
+  engine_version = "15.15"       # актуальна версія PostgreSQL
   instance_class = "db.t3.micro" # найдешевший клас
   multi_az       = false         # без standby (дешевше)
 
   # --- Credentials ---
   db_name     = "myapp"
-  db_username = "admin"
+  db_username = "dbadmin" # admin - зарезервоване слово в PostgreSQL
   # db_password не задано - буде згенеровано автоматично
 
   # --- Мережа ---
