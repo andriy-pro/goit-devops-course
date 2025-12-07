@@ -5,7 +5,7 @@
 # Цей файл демонструє використання модуля rds
 # для створення RDS PostgreSQL та Aurora Cluster.
 #
-# УВАГА: RDS коштує гроші! Після тестування виконайте:
+# УВАГА: RDS/Aurora коштує гроші! Після тестування виконайте:
 # terraform destroy
 
 # ===========================================
@@ -82,8 +82,11 @@ module "rds_postgres" {
 # Aurora PostgreSQL Cluster (use_aurora = true)
 # ===========================================
 #
-# ЗАКОМЕНТОВАНО за замовчуванням!
+# ЗАКОМЕНТОВАНО за замовчуванням.
 # Розкоментуйте для тестування Aurora.
+#
+# ПРИМІТКА: AWS Free Tier акаунти мають обмеження на Aurora.
+# Потрібен повний акаунт або Express Configuration.
 #
 # Aurora дорожча, але має переваги:
 # - Автоматичне масштабування сховища
@@ -99,13 +102,13 @@ module "rds_postgres" {
 #   identifier     = "lesson-10-aurora"
 #   use_aurora     = true                # true = Aurora Cluster
 #   engine         = "aurora-postgresql" # Aurora PostgreSQL
-#   engine_version = "15.4"
+#   engine_version = "15.4"              # Aurora має свої версії
 #   instance_class = "db.t3.medium"      # Aurora мінімум t3.medium!
 #   multi_az       = false               # true для reader instance
 #
 #   # --- Credentials ---
 #   db_name     = "myapp"
-#   db_username = "admin"
+#   db_username = "dbadmin" # admin - зарезервоване слово
 #
 #   # --- Мережа ---
 #   vpc_id     = module.vpc.vpc_id
