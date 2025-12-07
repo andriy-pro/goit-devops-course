@@ -341,7 +341,6 @@ module "rds_postgres" {
 
 - Endpoint для підключення
 - Security Group: lesson-10-postgres-sg
-- Parameter Group: lesson-10-postgres-params
 - Subnet Group: lesson-10-postgres-subnet-group
 
 ### Тест Aurora (обмеження Free Tier)
@@ -372,10 +371,3 @@ module "rds_postgres" {
 | VPC (без NAT)       | $0           |
 
 ⚠️ **УВАГА:** Після тестування **ОБОВ'ЯЗКОВО** виконайте `terraform destroy`!
-
----
-
-## Автор
-
-Урок 10 — Гнучкий Terraform-модуль для баз даних
-GoIT DevOps Course
