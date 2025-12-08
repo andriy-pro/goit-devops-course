@@ -1,0 +1,47 @@
+# ===========================================
+# Конфігурація Prometheus
+# ===========================================
+
+# --- Server ---
+server:
+  # Persistence для збереження метрик
+  persistentVolume:
+    enabled: false  # Вимкнено для спрощення (dev/test)
+    # enabled: true
+    # size: 8Gi
+
+  # Ресурси
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+
+  # Retention
+  retention: "7d"
+
+# --- AlertManager ---
+alertmanager:
+  enabled: true
+  persistentVolume:
+    enabled: false  # Вимкнено для спрощення
+
+# --- PushGateway ---
+pushgateway:
+  enabled: false  # Не потрібен для базового моніторингу
+
+# --- Node Exporter ---
+nodeExporter:
+  enabled: true  # Збір метрик з nodes
+
+# --- Kube State Metrics ---
+kubeStateMetrics:
+  enabled: true  # Збір метрик Kubernetes об'єктів
+
+# --- Service ---
+server:
+  service:
+    type: ClusterIP
+

@@ -1,0 +1,156 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  containers:
+  - name: aws-cli
+    image: amazon/aws-cli:latest
+    command:
+    - sleep
+    args:
+    - "infinity"
+    volumeMounts:
+    - name: shared-data
+      mountPath: /shared
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:debug
+    command:
+    - sleep
+    args:
+    - "infinity"
+    volumeMounts:
+    - name: shared-data
+      mountPath: /shared
+  - name: git
+    image: alpine/git:latest
+    command:
+    - sleep
+    args:
+    - "infinity"
+  volumes:
+  - name: shared-data
+    emptyDir: {}
+'''
+        }
+    }
+    
+    environment {
+        AWS_REGION = 'eu-north-1'
+        AWS_ACCOUNT_ID = '943538517680'
+        ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        ECR_REPOSITORY = 'lesson-9-django'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        GIT_BRANCH = 'lesson-8-9'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        
+        stage('Get ECR Token') {
+            steps {
+                container('aws-cli') {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                      credentialsId: 'aws-credentials']]) {
+                        sh '''
+                            echo "Getting ECR login token..."
+                            aws ecr get-login-password --region ${AWS_REGION} > /shared/ecr-password
+                            echo "ECR token saved to /shared/ecr-password"
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Configure Kaniko Auth') {
+            steps {
+                container('kaniko') {
+                    sh '''
+                        echo "Configuring Kaniko Docker auth..."
+                        mkdir -p /kaniko/.docker
+                        
+                        # Читаємо токен і кодуємо в base64
+                        ECR_TOKEN=$(cat /shared/ecr-password)
+                        AUTH=$(echo -n "AWS:${ECR_TOKEN}" | base64 | tr -d '\\n')
+                        
+                        cat > /kaniko/.docker/config.json << EOF
+{
+    "auths": {
+        "${ECR_REGISTRY}": {
+            "auth": "${AUTH}"
+        }
+    }
+}
+EOF
+                        echo "Kaniko auth configured for ${ECR_REGISTRY}"
+                    '''
+                }
+            }
+        }
+        
+        stage('Build & Push Image') {
+            steps {
+                container('kaniko') {
+                    sh '''
+                        echo "Building and pushing image..."
+                        /kaniko/executor \
+                            --context=dir://$(pwd)/lesson-9 \
+                            --dockerfile=$(pwd)/lesson-9/Dockerfile \
+                            --destination=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} \
+                            --destination=${ECR_REGISTRY}/${ECR_REPOSITORY}:latest \
+                            --cache=true
+                    '''
+                }
+            }
+        }
+        
+        stage('Update Helm Values') {
+            steps {
+                container('git') {
+                    withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                        sh '''
+                            echo "Updating Helm values.yaml..."
+                            cd ${WORKSPACE}
+                            
+                            # Налаштування git
+                            git config --global user.email "jenkins@lesson-9.local"
+                            git config --global user.name "Jenkins CI"
+                            git config --global --add safe.directory ${WORKSPACE}
+                            
+                            # Оновлюємо tag в values.yaml
+                            sed -i "s|tag: .*|tag: \\"${IMAGE_TAG}\\"|" lesson-9/charts/django-app/values.yaml
+                            
+                            # Показуємо зміни
+                            cat lesson-9/charts/django-app/values.yaml | grep -A2 "image:"
+                            
+                            # Комітимо та пушимо
+                            git add lesson-9/charts/django-app/values.yaml
+                            git commit -m "ci: Update image tag to ${IMAGE_TAG}" || echo "No changes to commit"
+                            
+                            # Push з токеном
+                            git push https://${GITHUB_TOKEN}@github.com/andriy-pro/goit-devops-course.git HEAD:${GIT_BRANCH}
+                            
+                            echo "Helm values updated with tag: ${IMAGE_TAG}"
+                        '''
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo "✅ Pipeline успішно завершено! Image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+        }
+        failure {
+            echo "❌ Pipeline завершено з помилкою"
+        }
+    }
+}
