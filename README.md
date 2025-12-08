@@ -730,9 +730,9 @@ rm -f final-project/terraform.tfstate*
 
 **Що видно:**
 
-- Node Group з 3 nodes
-- Instance types: t3.medium, t3.small (SPOT)
-- Capacity type: SPOT
+- VPC та subnets (public/private)
+- Security groups для кластера та nodes
+- Status: Active
 
 #### RDS Database
 
@@ -743,8 +743,6 @@ rm -f final-project/terraform.tfstate*
 - База `final-project-postgres`
 - Status: Available
 - Engine: PostgreSQL 15.15
-- Instance class: db.t3.micro
-- Multi-AZ: No
 
 #### ECR Repository
 
@@ -753,7 +751,7 @@ rm -f final-project/terraform.tfstate*
 **Що видно:**
 
 - Репозиторій `final-project-django`
-- URI для pull/push
+- Поки жодних образів
 
 #### ECR Images
 
@@ -761,7 +759,7 @@ rm -f final-project/terraform.tfstate*
 
 **Що видно:**
 
-- Образі з тегами: 1, 2, 3, latest
+- Після кількох збірок образів образи з тегами: 1, 2, 3, latest
 - Розміри образів
 - Дати створення
 
@@ -775,7 +773,7 @@ rm -f final-project/terraform.tfstate*
 
 **Що видно:**
 
-- Jenkins Dashboard після входу
+- Початковий вигляд Jenkins Dashboard після входу
 - Меню зліва: New Item, Build History, Manage Jenkins
 - Версія Jenkins внизу сторінки
 
@@ -785,10 +783,10 @@ rm -f final-project/terraform.tfstate*
 
 **Що видно:**
 
+- Післяд успішного запуску Pipeline job
 - Успішний build (#3)
 - Зелена галочка
 - Час виконання
-- Логі build
 
 ---
 
@@ -800,7 +798,7 @@ rm -f final-project/terraform.tfstate*
 
 **Що видно:**
 
-- Argo CD Dashboard після входу
+- Початковий вигляд Argo CD -> Settings -> Clusters
 - Меню зліва: Applications, Settings, User Info
 - Статус підключення до кластера
 
@@ -810,10 +808,10 @@ rm -f final-project/terraform.tfstate*
 
 **Що видно:**
 
+- Після успішного деплою Django застосунку
 - Application `django-app`
 - Status: Synced (зелений)
 - Health: Healthy (зелене серце)
-- Tree view з Deployment, Service, ConfigMap, HPA
 
 ---
 
@@ -825,7 +823,6 @@ rm -f final-project/terraform.tfstate*
 
 **Що видно:**
 
-- Головна сторінка Prometheus
 - Поле для PromQL запитів
 - Меню: Status, Alerts, Graph
 
@@ -846,8 +843,6 @@ rm -f final-project/terraform.tfstate*
 **Що видно:**
 
 - Головна сторінка Grafana після входу
-- Меню зліва: Dashboards, Explore, Alerting, Connections
-- Welcome message
 
 #### Grafana Datasource
 
