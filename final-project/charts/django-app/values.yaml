@@ -3,7 +3,7 @@
 # ============================================
 image:
   repository: "943538517680.dkr.ecr.eu-north-1.amazonaws.com/final-project-django"
-  tag: "initial"
+  tag: "3"
   pullPolicy: Always
 
 # ============================================
