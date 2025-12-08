@@ -21,14 +21,16 @@
 
 Фінальний проєкт демонструє повну DevOps інфраструктуру на AWS з використанням:
 
-- **Infrastructure as Code (IaC)** — Terraform для автоматизації створення всіх AWS ресурсів
+- **Infrastructure as Code (IaC)** — Terraform для автоматизації створення всіх
+  AWS ресурсів
 - **Kubernetes** — EKS кластер для оркестрації контейнеризованих застосунків
 - **CI/CD** — Jenkins для автоматизації збірки та деплою Docker образів
 - **GitOps** — Argo CD для автоматичного deployment з Git репозиторію
 - **Моніторинг** — Prometheus + Grafana для збору та візуалізації метрик
 - **База даних** — RDS PostgreSQL для зберігання даних
 
-**Застосунок:** Django веб-застосунок, який автоматично збирається, пушиться в ECR, і деплоїться в Kubernetes через GitOps pipeline.
+**Застосунок:** Django веб-застосунок, який автоматично збирається, пушиться в
+ECR, і деплоїться в Kubernetes через GitOps pipeline.
 
 ---
 
@@ -100,17 +102,17 @@ sequenceDiagram
 
 ## Компоненти
 
-| Компонент | Призначення | Статус |
-|-----------|-------------|--------|
-| **VPC** | Мережева ізоляція з public/private subnets | ✅ |
-| **EKS** | Kubernetes кластер (3 nodes, SPOT) | ✅ |
-| **ECR** | Docker registry для Django images | ✅ |
-| **RDS** | PostgreSQL база даних (db.t3.micro) | ✅ |
-| **Jenkins** | CI/CD сервер з persistence | ✅ |
-| **Argo CD** | GitOps deployment | ✅ |
-| **Prometheus** | Збір метрик з кластера | ✅ |
-| **Grafana** | Візуалізація метрик | ✅ |
-| **S3 + DynamoDB** | Terraform state backend | ✅ |
+| Компонент         | Призначення                                | Статус |
+| ----------------- | ------------------------------------------ | ------ |
+| **VPC**           | Мережева ізоляція з public/private subnets | ✅     |
+| **EKS**           | Kubernetes кластер (3 nodes, SPOT)         | ✅     |
+| **ECR**           | Docker registry для Django images          | ✅     |
+| **RDS**           | PostgreSQL база даних (db.t3.micro)        | ✅     |
+| **Jenkins**       | CI/CD сервер з persistence                 | ✅     |
+| **Argo CD**       | GitOps deployment                          | ✅     |
+| **Prometheus**    | Збір метрик з кластера                     | ✅     |
+| **Grafana**       | Візуалізація метрик                        | ✅     |
+| **S3 + DynamoDB** | Terraform state backend                    | ✅     |
 
 ---
 
@@ -413,7 +415,8 @@ kubectl port-forward svc/grafana 3000:80 -n monitoring
 Warning: Resource targeting is in effect
 ```
 
-**Причина:** Використання `-target` для створення S3 backend перед міграцією state.
+**Причина:** Використання `-target` для створення S3 backend перед міграцією
+state.
 
 **Рішення:** Це очікувана поведінка. Після створення S3 bucket:
 
@@ -451,7 +454,8 @@ Error: context deadline exceeded
 with module.monitoring.helm_release.prometheus
 ```
 
-**Причина:** Helm чекає поки всі поди будуть Ready, але timeout (5 хв) закінчується раніше.
+**Причина:** Helm чекає поки всі поди будуть Ready, але timeout (5 хв)
+закінчується раніше.
 
 **Рішення:** Додати в `helm_release`:
 
@@ -470,7 +474,8 @@ wait    = false  # Не чекати Ready
 Warning: FailedScheduling - pod has unbound immediate PersistentVolumeClaims
 ```
 
-**Причина:** Helm chart за замовчуванням створює PVC, але StorageClass не налаштований.
+**Причина:** Helm chart за замовчуванням створює PVC, але StorageClass не
+налаштований.
 
 **Рішення:** Вимкнути persistence в values:
 
@@ -480,7 +485,7 @@ server:
     enabled: false
 
 alertmanager:
-  enabled: false  # Також потребує PVC
+  enabled: false # Також потребує PVC
 ```
 
 ---
@@ -570,7 +575,8 @@ ERROR: Credentials 'github-token' is of type 'Username with password'
 where 'org.jenkinsci.plugins.plaincredentials.StringCredentials' was expected
 ```
 
-**Причина:** GitHub token створено як "Username with password" замість "Secret text".
+**Причина:** GitHub token створено як "Username with password" замість "Secret
+text".
 
 **Рішення:**
 
@@ -874,15 +880,15 @@ rm -f final-project/terraform.tfstate*
 
 ## Вартість
 
-| Ресурс | Вартість/год | Примітки |
-|--------|--------------|----------|
-| EKS Control Plane | $0.10 | Фіксована |
-| EKS Nodes (3x SPOT) | ~$0.03 | t3.medium + t3.small |
-| RDS db.t3.micro | $0.02 | Free Tier eligible |
-| NAT Gateway | $0.05 | Фіксована |
-| EBS Volumes | ~$0.01 | Jenkins persistence (8Gi) |
-| S3 + DynamoDB | ~$0 | Мінімальні витрати |
-| **Загалом** | **~$0.21/год** | ~$5/день |
+| Ресурс              | Вартість/год   | Примітки                  |
+| ------------------- | -------------- | ------------------------- |
+| EKS Control Plane   | $0.10          | Фіксована                 |
+| EKS Nodes (3x SPOT) | ~$0.03         | t3.medium + t3.small      |
+| RDS db.t3.micro     | $0.02          | Free Tier eligible        |
+| NAT Gateway         | $0.05          | Фіксована                 |
+| EBS Volumes         | ~$0.01         | Jenkins persistence (8Gi) |
+| S3 + DynamoDB       | ~$0            | Мінімальні витрати        |
+| **Загалом**         | **~$0.21/год** | ~$5/день                  |
 
 ⚠️ **УВАГА:** Після завершення обов'язково виконайте `terraform destroy`!
 
@@ -892,11 +898,12 @@ rm -f final-project/terraform.tfstate*
 
 Фінальний проєкт успішно демонструє повну DevOps інфраструктуру на AWS:
 
-✅ **Infrastructure as Code** — Terraform автоматизує створення всіх ресурсів
-✅ **CI/CD Pipeline** — Jenkins автоматично збирає та пушить Docker образи
-✅ **GitOps** — Argo CD автоматично деплоїть зміни з Git
-✅ **Моніторинг** — Prometheus + Grafana збирають та візуалізують метрики
-✅ **База даних** — RDS PostgreSQL для зберігання даних
-✅ **Масштабованість** — Kubernetes HPA автоматично масштабує застосунок
+- ✅ **Infrastructure as Code** — Terraform автоматизує створення всіх ресурсів
+- ✅ **CI/CD Pipeline** — Jenkins автоматично збирає та пушить Docker образи
+- ✅ **GitOps** — Argo CD автоматично деплоїть зміни з Git
+- ✅ **Моніторинг** — Prometheus + Grafana збирають та візуалізують метрики
+- ✅ **База даних** — RDS PostgreSQL для зберігання даних
+- ✅ **Масштабованість** — Kubernetes HPA автоматично масштабує застосунок
 
-Всі компоненти працюють разом для створення повноцінного CI/CD pipeline з автоматичним deployment.
+Всі компоненти працюють разом для створення повноцінного CI/CD pipeline з
+автоматичним deployment.
