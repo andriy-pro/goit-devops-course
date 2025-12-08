@@ -48,10 +48,12 @@ resource "helm_release" "jenkins" {
         }
       }
 
-      # Persistence вимкнено (EKS потребує EBS CSI driver)
-      # Для production потрібно встановити aws-ebs-csi-driver
+      # Persistence увімкнено (EBS CSI driver встановлено)
       persistence = {
-        enabled = false
+        enabled      = true
+        storageClass = "gp2"
+        size         = "8Gi"
+        accessMode   = "ReadWriteOnce"
       }
     })
   ]
