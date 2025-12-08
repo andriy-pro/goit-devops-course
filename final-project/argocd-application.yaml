@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: django-app
+  namespace: argocd
+  labels:
+    project: final-project
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/andriy-pro/goit-devops-course.git
+    targetRevision: final-project
+    path: final-project/charts/django-app
+    helm:
+      valueFiles:
+        - values.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+

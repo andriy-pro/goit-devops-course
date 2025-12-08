@@ -24,10 +24,12 @@ spec:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
-          # Підключення ConfigMap через envFrom
+          # Підключення ConfigMap та Secret через envFrom
           envFrom:
             - configMapRef:
                 name: {{ include "django-app.fullname" . }}-config
+            - secretRef:
+                name: rds-credentials
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

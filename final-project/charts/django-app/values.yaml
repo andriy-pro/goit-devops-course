@@ -2,8 +2,8 @@
 # Налаштування образу
 # ============================================
 image:
-  repository: "943538517680.dkr.ecr.eu-north-1.amazonaws.com/lesson-9-django"
-  tag: "3"
+  repository: "943538517680.dkr.ecr.eu-north-1.amazonaws.com/final-project-django"
+  tag: "initial"
   pullPolicy: Always
 
 # ============================================

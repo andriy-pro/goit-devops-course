@@ -73,9 +73,10 @@ module "eks" {
   capacity_type  = "SPOT"
   instance_types = ["t3.medium", "t3.small"]
 
-  desired_nodes = 2
-  min_nodes     = 2
-  max_nodes     = 4
+  # 3 nodes для розміщення всіх компонентів (Jenkins, ArgoCD, Monitoring)
+  desired_nodes = 3
+  min_nodes     = 3
+  max_nodes     = 5
 }
 
 # ===========================================

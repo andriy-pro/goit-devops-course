@@ -13,6 +13,12 @@ resource "helm_release" "prometheus" {
   create_namespace = true
   version          = "25.8.0" # https://github.com/prometheus-community/helm-charts/releases
 
+  # Збільшений timeout для великих кластерів
+  timeout = 600 # 10 хвилин замість 5
+
+  # Не чекати поки всі поди будуть Ready
+  wait = false
+
   values = [file("${path.module}/values-prometheus.yaml")]
 
   # Чекаємо поки EKS буде готовий
@@ -28,6 +34,12 @@ resource "helm_release" "grafana" {
   namespace        = "monitoring"
   create_namespace = true
   version          = "7.0.0" # https://github.com/grafana/helm-charts/releases
+
+  # Збільшений timeout
+  timeout = 600 # 10 хвилин
+
+  # Не чекати поки всі поди будуть Ready
+  wait = false
 
   values = [file("${path.module}/values-grafana.yaml")]
 

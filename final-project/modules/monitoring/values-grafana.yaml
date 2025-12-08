@@ -1,32 +1,29 @@
 # ===========================================
-# Конфігурація Grafana
+# Конфігурація Grafana (мінімальна для dev/test)
 # ===========================================
 
 # --- Persistence ---
 persistence:
-  enabled: false  # Вимкнено для спрощення (dev/test)
-  # enabled: true
-  # size: 5Gi
+  enabled: false
 
 # --- Admin credentials ---
 adminUser: admin
-adminPassword: grafana123  # ⚠️ Змінити на secure password!
+adminPassword: goit-2025-grafana
 
 # --- Service ---
 service:
   type: ClusterIP
 
-# --- Resources ---
+# --- Мінімальні ресурси ---
 resources:
   requests:
-    memory: 256Mi
-    cpu: 100m
+    memory: 64Mi
+    cpu: 25m
   limits:
-    memory: 512Mi
-    cpu: 250m
+    memory: 128Mi
+    cpu: 50m
 
 # --- Datasources ---
-# Автоматичне підключення до Prometheus
 datasources:
   datasources.yaml:
     apiVersion: 1
@@ -37,39 +34,7 @@ datasources:
         access: proxy
         isDefault: true
 
-# --- Dashboard providers ---
-dashboardProviders:
-  dashboardproviders.yaml:
-    apiVersion: 1
-    providers:
-      - name: 'default'
-        orgId: 1
-        folder: ''
-        type: file
-        disableDeletion: false
-        editable: true
-        options:
-          path: /var/lib/grafana/dashboards/default
-
-# --- Preloaded dashboards ---
-# Kubernetes cluster dashboard з Grafana.com
-dashboards:
-  default:
-    # Kubernetes Cluster Dashboard
-    kubernetes-cluster:
-      gnetId: 6417
-      revision: 1
-      datasource: Prometheus
-    
-    # Kubernetes Pods Dashboard
-    kubernetes-pods:
-      gnetId: 6336
-      revision: 1
-      datasource: Prometheus
-
-# --- Sidecar для ConfigMap dashboards ---
+# --- Sidecar вимкнено (зменшує ресурси) ---
 sidecar:
   dashboards:
-    enabled: true
-    label: grafana_dashboard
-
+    enabled: false
